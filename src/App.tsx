@@ -14,7 +14,6 @@ function App() {
   const validateUrl = (url: string, platform: string): boolean => {
     const patterns = {
       Instagram: /(?:^|\.)instagram\.com|instagr\.am/i,
-      YouTube: /(?:^|\.)youtube\.com|youtu\.be/i,
       TikTok: /(?:^|\.)tiktok\.com/i,
       Facebook: /(?:^|\.)facebook\.com|fb\.watch/i,
       Pinterest: /(?:^|\.)pinterest\.com|pin\.it/i,
@@ -212,44 +211,6 @@ function App() {
             <div className={`mt-8 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <h3 className="font-medium mb-4">Download Options:</h3>
               <div className="space-y-4">
-                {platform === 'YouTube' && (
-                  <>
-                    <div className="mb-4">
-                      <h4 className="font-medium">{result.info}</h4>
-                      <p className="text-sm text-gray-500">Duration: {result.duration}</p>
-                    </div>
-                    <div className="grid gap-4">
-                      <h5 className="font-medium">Video:</h5>
-                      {result.video.map((v: any, i: number) => (
-                        <a
-                          key={i}
-                          href={v.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <span>Download Video {v.height}p</span>
-                          <span className="text-sm">{v.size}</span>
-                        </a>
-                      ))}
-                      <h5 className="font-medium mt-4">Audio:</h5>
-                      {result.audio.map((v: any, i: number) => (
-                        <a
-                          key={i}
-                          href={v.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <span>Download Audio {v.bitrate} Kbps</span>
-                          <span className="text-sm">{v.size}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-
                 {platform === 'TikTok' && result && (
                   <>
                     <div className="mb-4">
