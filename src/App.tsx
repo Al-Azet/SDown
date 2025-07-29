@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { Download, Moon, Sun, Instagram, Youtube, Facebook, Music2, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { Download, Moon, Sun, Instagram, Youtube, Facebook, Music2, AlertCircle, XCircle, Loader2, Image } from 'lucide-react';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -17,6 +17,7 @@ function App() {
       YouTube: /(?:^|\.)youtube\.com|youtu\.be/i,
       TikTok: /(?:^|\.)tiktok\.com/i,
       Facebook: /(?:^|\.)facebook\.com|fb\.watch/i,
+      Pinterest: /(?:^|\.)pinterest\.com|pin\.it/i,
     };
 
     if (!platform) {
@@ -119,12 +120,13 @@ function App() {
           </h2>
 
           {/* Platform Selection */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
             {[
               { name: 'Instagram', icon: Instagram, color: 'rose' },
               { name: 'YouTube', icon: Youtube, color: 'red' },
               { name: 'TikTok', icon: Music2, color: 'purple' },
               { name: 'Facebook', icon: Facebook, color: 'blue' },
+              { name: 'Pinterest', icon: Image, color: 'red' },
             ].map((social) => (
               <button
                 key={social.name}
@@ -360,6 +362,37 @@ function App() {
                         >
                           <span>Download {i}</span>
                           <span className="text-sm">{v.title}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {platform === 'Pinterest' && (
+                  <>
+                    <div className="mb-4">
+                      <h4 className="font-medium">{result.title}</h4>
+                      {result.description && (
+                        <p className="text-sm text-gray-500 mt-2">{result.description}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-4">
+                      {result.results.map((item: any, i: number) => (
+                        <a
+                          key={i}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center justify-between p-3 rounded-lg hover:transition-colors ${
+                            item.type === 'video' 
+                              ? 'bg-red-600 text-white hover:bg-red-700' 
+                              : 'bg-red-500 text-white hover:bg-red-600'
+                          }`}
+                        >
+                          <span>
+                            Download {item.type === 'video' ? 'Video' : 'Image'}
+                          </span>
+                          <span className="text-sm">{item.title}</span>
                         </a>
                       ))}
                     </div>
