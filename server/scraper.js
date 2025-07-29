@@ -304,6 +304,144 @@ export async function pinterestDl(url) {
   });
 }
 
+export async function youtubeDl(url) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let result;
+
+      // Method 1: Try Y2mate API
+      try {
+        const { data } = await axios.post(
+          'https://www.y2mate.com/mates/en441/ajax/search',
+          new URLSearchParams({
+            k_query: url,
+            k_page: 'home',
+            hl: 'en',
+            q_auto: '0'
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'Origin': 'https://www.y2mate.com',
+              'Referer': 'https://www.y2mate.com/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          }
+        );
+
+        if (data.status === 'ok') {
+          const $ = cheerio.load(data.data);
+          const title = $('.media-info h3').text().trim();
+          const duration = $('.media-info .duration').text().trim();
+          
+          const video = [];
+          const audio = [];
+
+          $('.video-quality .btn-success').each((i, el) => {
+            const quality = $(el).closest('tr').find('.video-quality').text().trim();
+            const size = $(el).closest('tr').find('.size').text().trim();
+            const k = $(el).attr('data-k');
+            
+            if (k) {
+              video.push({
+                height: quality.replace('p', ''),
+                quality: quality,
+                size: size,
+                k: k
+              });
+            }
+          });
+
+          $('.audio-quality .btn-success').each((i, el) => {
+            const bitrate = $(el).closest('tr').find('.audio-quality').text().trim();
+            const size = $(el).closest('tr').find('.size').text().trim();
+            const k = $(el).attr('data-k');
+            
+            if (k) {
+              audio.push({
+                bitrate: bitrate.replace(' kbps', ''),
+                quality: bitrate,
+                size: size,
+                k: k
+              });
+            }
+          });
+
+          if (video.length > 0 || audio.length > 0) {
+            result = {
+              info: title,
+              duration: duration,
+              video: video,
+              audio: audio
+            };
+          }
+        }
+      } catch (e) {
+        console.log('Y2mate method failed, trying alternative...');
+      }
+
+      // Method 2: Try SaveTube API
+      if (!result) {
+        try {
+          const { data } = await axios.post(
+            'https://savetube.me/api/v1/info',
+            { url: url },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Origin': 'https://savetube.me',
+                'Referer': 'https://savetube.me/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              }
+            }
+          );
+
+          if (data.status && data.data) {
+            const video = data.data.video_formats ? data.data.video_formats.map(v => ({
+              height: v.height || v.quality,
+              quality: `${v.height}p` || v.quality,
+              size: v.filesize || 'Unknown',
+              url: v.url
+            })) : [];
+
+            const audio = data.data.audio_formats ? data.data.audio_formats.map(a => ({
+              bitrate: a.abr || a.quality,
+              quality: `${a.abr} kbps` || a.quality,
+              size: a.filesize || 'Unknown',
+              url: a.url
+            })) : [];
+
+            if (video.length > 0 || audio.length > 0) {
+              result = {
+                info: data.data.title,
+                duration: data.data.duration_string || 'Unknown',
+                video: video,
+                audio: audio
+              };
+            }
+          }
+        } catch (e) {
+          console.log('SaveTube method failed, trying NVL Group...');
+        }
+      }
+
+      // Method 3: Fallback to NVL Group (original method)
+      if (!result) {
+        const nvlGroup = new NvlGroup();
+        result = await nvlGroup.download(url);
+      }
+
+      if (!result || (!result.video && !result.audio)) {
+        throw new Error('Could not extract download links from YouTube URL');
+      }
+
+      resolve(result);
+    } catch (e) {
+      reject(new Error(`YouTube download failed: ${e.message}`));
+    }
+  });
+}
+
 export class NvlGroup {
   constructor() {
     this.signature = null;
