@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { instagramDl, tiktokDl, facebookDl, pinterestDl, youtubeDl, NvlGroup } from './scraper.js';
+import { instagramDl, tiktokDl, facebookDl, pinterestDl, NvlGroup } from './scraper.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,9 +26,6 @@ app.get('/download', async (req, res) => {
     let result;
 
     switch (platform) {
-      case 'YouTube': case 'youtube': case 'yt':
-        result = await ytdl.download(url);
-        break;
       case 'TikTok': case 'tiktok': case 'tt':
         result = await tiktokDl(url);
         break;
