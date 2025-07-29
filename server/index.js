@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { NvlGroup , tiktokDl, facebookDl, instagramDl } from './scraper.js';
+import { NvlGroup , tiktokDl, facebookDl, instagramDl, pinterestDl } from './scraper.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +37,9 @@ app.get('/download', async (req, res) => {
         break;
       case 'Instagram': case 'instagram': case 'ig':
         result = await instagramDl(url);
+        break;
+      case 'Pinterest': case 'pinterest': case 'pin':
+        result = await pinterestDl(url);
         break;
       default:
         return res.status(400).json({ error: 'Unsupported platform' });
