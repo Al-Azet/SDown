@@ -123,7 +123,7 @@ function App() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
             {[
               { name: 'Instagram', icon: Instagram, color: 'rose' },
-              { name: 'YouTube', icon: Youtube, color: 'red' },
+              // { name: 'YouTube', icon: Youtube, color: 'red' }, // Removed YouTube
               { name: 'TikTok', icon: Music2, color: 'purple' },
               { name: 'Facebook', icon: Facebook, color: 'blue' },
               { name: 'Pinterest', icon: Image, color: 'red' },
@@ -415,7 +415,7 @@ function App() {
               <li>Click "Download Now"</li>
               <li>Choose your preferred download option</li>
             </ol>
-          
+
           </div>
         </div>
 
