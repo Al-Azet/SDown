@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { NvlGroup , tiktokDl, facebookDl, instagramDl, pinterestDl } from './scraper.js';
+import { instagramDl, tiktokDl, facebookDl, pinterestDl, youtubeDl, NvlGroup } from './scraper.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
