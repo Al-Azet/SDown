@@ -13,7 +13,7 @@ export async function instagramDl(url) {
         new URLSearchParams({ q: url, w: '', p: 'home', lang: 'en' }),
         {
           headers: {
-            'Accept': 'application/json, text/plain, /',
+            'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Origin': 'https://yt1s.io',
             'Referer': 'https://yt1s.io/',
@@ -62,7 +62,7 @@ export async function tiktokDl(url) {
           {},
           {
             headers: {
-              'Accept': 'application/json, text/javascript, /; q=0.01',
+              'Accept': 'application/json, text/javascript, */*; q=0.01',
               'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
               'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
               'Origin': 'https://www.tikwm.com',
@@ -156,6 +156,79 @@ export async function facebookDl(url) {
             type: $(el).text().includes('HD') ? 'HD' : 'SD',
             url: $(el).find('a').attr('href') || '',
           })),
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+export async function pinterestDl(url) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { data } = await axios.post(
+        'https://www.savepin.app/download.php',
+        new URLSearchParams({ url: url }),
+        {
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': 'https://www.savepin.app',
+            'Referer': 'https://www.savepin.app/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }
+      );
+
+      const $ = cheerio.load(data);
+      const results = [];
+
+      // Extract image/video URLs
+      $('.result-box a').each((i, el) => {
+        const downloadUrl = $(el).attr('href');
+        const title = $(el).text().trim();
+        if (downloadUrl && title) {
+          results.push({
+            url: downloadUrl,
+            title: title,
+            type: title.toLowerCase().includes('video') ? 'video' : 'image'
+          });
+        }
+      });
+
+      // If no results from first method, try alternative
+      if (results.length === 0) {
+        const imageUrl = $('.pin-image img').attr('src');
+        const videoUrl = $('.pin-video source').attr('src');
+        const title = $('.pin-title').text().trim() || 'Pinterest Content';
+
+        if (imageUrl) {
+          results.push({
+            url: imageUrl,
+            title: title,
+            type: 'image'
+          });
+        }
+
+        if (videoUrl) {
+          results.push({
+            url: videoUrl,
+            title: title,
+            type: 'video'
+          });
+        }
+      }
+
+      if (results.length === 0) {
+        throw new Error('No downloadable content found');
+      }
+
+      resolve({
+        status: true,
+        title: $('.pin-title').text().trim() || 'Pinterest Content',
+        description: $('.pin-description').text().trim() || '',
+        results: results
       });
     } catch (e) {
       reject(e);
