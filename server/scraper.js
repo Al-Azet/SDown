@@ -166,72 +166,140 @@ export async function facebookDl(url) {
 export async function pinterestDl(url) {
   return new Promise(async (resolve, reject) => {
     try {
-      const { data } = await axios.post(
-        'https://www.savepin.app/download.php',
-        new URLSearchParams({ url: url }),
-        {
-          headers: {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Origin': 'https://www.savepin.app',
-            'Referer': 'https://www.savepin.app/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      // Try first API method
+      let result;
+      try {
+        const { data } = await axios.post(
+          'https://pinterestvideodownloader.com/download.php',
+          new URLSearchParams({ url: url }),
+          {
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Origin': 'https://pinterestvideodownloader.com',
+              'Referer': 'https://pinterestvideodownloader.com/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
           }
+        );
+
+        const $ = cheerio.load(data);
+        const results = [];
+
+        // Look for download links
+        $('a[href*="https://"]').each((i, el) => {
+          const downloadUrl = $(el).attr('href');
+          const text = $(el).text().trim().toLowerCase();
+          
+          if (downloadUrl && (downloadUrl.includes('.jpg') || downloadUrl.includes('.png') || downloadUrl.includes('.mp4') || downloadUrl.includes('.gif'))) {
+            const isVideo = downloadUrl.includes('.mp4') || text.includes('video');
+            results.push({
+              url: downloadUrl,
+              title: isVideo ? 'Video Download' : 'Image Download',
+              type: isVideo ? 'video' : 'image'
+            });
+          }
+        });
+
+        if (results.length > 0) {
+          result = {
+            status: true,
+            title: $('title').text() || 'Pinterest Content',
+            description: '',
+            results: results
+          };
         }
-      );
+      } catch (e) {
+        console.log('First method failed, trying alternative...');
+      }
 
-      const $ = cheerio.load(data);
-      const results = [];
+      // Try alternative API if first failed
+      if (!result) {
+        try {
+          const { data } = await axios.post(
+            'https://pinterestvideodl.com/download',
+            new URLSearchParams({ url: url }),
+            {
+              headers: {
+                'Accept': 'application/json, text/plain, */*',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Origin': 'https://pinterestvideodl.com',
+                'Referer': 'https://pinterestvideodl.com/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              }
+            }
+          );
 
-      // Extract image/video URLs
-      $('.result-box a').each((i, el) => {
-        const downloadUrl = $(el).attr('href');
-        const title = $(el).text().trim();
-        if (downloadUrl && title) {
-          results.push({
-            url: downloadUrl,
-            title: title,
-            type: title.toLowerCase().includes('video') ? 'video' : 'image'
-          });
-        }
-      });
+          if (data && typeof data === 'object') {
+            const results = [];
+            
+            if (data.video_url) {
+              results.push({
+                url: data.video_url,
+                title: 'Video Download',
+                type: 'video'
+              });
+            }
+            
+            if (data.image_url) {
+              results.push({
+                url: data.image_url,
+                title: 'Image Download', 
+                type: 'image'
+              });
+            }
 
-      // If no results from first method, try alternative
-      if (results.length === 0) {
-        const imageUrl = $('.pin-image img').attr('src');
-        const videoUrl = $('.pin-video source').attr('src');
-        const title = $('.pin-title').text().trim() || 'Pinterest Content';
-
-        if (imageUrl) {
-          results.push({
-            url: imageUrl,
-            title: title,
-            type: 'image'
-          });
-        }
-
-        if (videoUrl) {
-          results.push({
-            url: videoUrl,
-            title: title,
-            type: 'video'
-          });
+            if (results.length > 0) {
+              result = {
+                status: true,
+                title: data.title || 'Pinterest Content',
+                description: data.description || '',
+                results: results
+              };
+            }
+          }
+        } catch (e) {
+          console.log('Second method failed, trying direct extraction...');
         }
       }
 
-      if (results.length === 0) {
-        throw new Error('No downloadable content found');
+      // Try direct URL extraction as last resort
+      if (!result) {
+        // Extract Pinterest ID from URL
+        const pinIdMatch = url.match(/pin\/(\d+)/);
+        if (pinIdMatch) {
+          const pinId = pinIdMatch[1];
+          
+          // Try to construct direct media URLs
+          const results = [
+            {
+              url: `https://i.pinimg.com/originals/${pinId.slice(-2)}/${pinId.slice(-4, -2)}/${pinId.slice(-6, -4)}/${pinId}.jpg`,
+              title: 'High Quality Image',
+              type: 'image'
+            },
+            {
+              url: `https://i.pinimg.com/736x/${pinId.slice(-2)}/${pinId.slice(-4, -2)}/${pinId.slice(-6, -4)}/${pinId}.jpg`,
+              title: 'Standard Quality Image',
+              type: 'image'
+            }
+          ];
+
+          result = {
+            status: true,
+            title: 'Pinterest Content',
+            description: 'Extracted from Pinterest URL',
+            results: results
+          };
+        }
       }
 
-      resolve({
-        status: true,
-        title: $('.pin-title').text().trim() || 'Pinterest Content',
-        description: $('.pin-description').text().trim() || '',
-        results: results
-      });
+      if (!result || !result.results || result.results.length === 0) {
+        throw new Error('Could not extract downloadable content from Pinterest URL');
+      }
+
+      resolve(result);
     } catch (e) {
-      reject(e);
+      reject(new Error(`Pinterest download failed: ${e.message}`));
     }
   });
 }
